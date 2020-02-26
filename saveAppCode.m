@@ -22,5 +22,5 @@ function [loadOutcome, loadedData] = saveAppCode(filepath, code)
     fileWriter = appdesigner.internal.serialization.FileWriter(filepath);
 
     fileWriter.writeMATLABCodeText(code);
-    loadOutcome.Status ='updated';
+    loadOutcome.Status ='updated2';
 end
