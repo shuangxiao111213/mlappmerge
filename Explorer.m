@@ -1,4 +1,4 @@
-classdef ExplorerA < matlab.apps.AppBase
+classdef ExplorerB < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
@@ -11,6 +11,7 @@ classdef ExplorerA < matlab.apps.AppBase
         StopTimeField            matlab.ui.control.EditField
         TargetsDropDown          matlab.ui.control.DropDown
         ApplicationTree          matlab.ui.container.Tree
+        HelpButton               matlab.ui.control.Button
     end
 
     
@@ -35,27 +36,6 @@ classdef ExplorerA < matlab.apps.AppBase
         helpIcon           = fullfile(matlabroot, 'toolbox', 'slrt', 'slrt', '+SimulinkRealTime', '+internal', '+guis', 'help_48.png');
     end
     
-    properties (Constant, Access = private)
-        addToSignalGroupButtonTooltip      = 'Add selected signals to signal group';
-        removeFromSignalGroupButtonTooltip = 'Remove selected signals from signal group';
-        targetsDropDownTooltip             = 'Manage target computers';
-        loadApplicationButtonTooltip       = 'Select new application to load on target computer';
-        stopTimeFieldTooltip               = 'Stop time parameter for model';
-        helpButtonTooltip                  = 'Help using SLRT Explorer';
-        startTooltip                       = 'Start model running on target computer';
-        stopTooltip                        = 'Stop model running on target computer';
-        disconnectedTooltip                = 'Disconnect from selected target';
-        connectedTooltip                   = 'Connect to selected target';
-        filterSignalsTooltip               = 'Search signal list in current model';
-        filterParametersTooltip            = 'Search parameters in current model';
-        contentsOnlyTooltip                = 'Show contents of current system only';
-        contentsBelowTooltip               = 'Show contents of current system and below';
-        streamSignalGroupTooltip           = 'Stream the current signal group to SDI.  A signal group must be streamed before it is available in the scopes below.';
-        highlightSignalButtonTooltip       = {'Highlight the selected signal (indicated by the blue box) in the model.';'Only available if model is open.'};
-        highlightParameterButtonTooltip    = {'Highlight the selected parameter (indicated by the blue box) in the model.';'Only available if model is open.'};
-        
-    end
-    
     properties (Access = private)
         targetMap
         signalsGroupMap
@@ -67,9 +47,6 @@ classdef ExplorerA < matlab.apps.AppBase
         
         scopeIdx = 1
         scopePos
-        
-        selectedSignalRow
-        selectedParameterRow
         
         signalTimer
     end
@@ -84,7 +61,7 @@ classdef ExplorerA < matlab.apps.AppBase
             % blockPaths may be one of the following:
             %
             %   1) Cell array of strings, one for each level of model hierarchy
-            %   2) Simulink.SimulationData.BlockPath object
+            %   2) Simulink.BlockPath object
             %
             % The returned value is a single string representing the block.
             %
@@ -99,7 +76,7 @@ classdef ExplorerA < matlab.apps.AppBase
                 return;
             end
             
-            if isa(blockPaths, 'Simulink.SimulationData.BlockPath')
+            if isa(blockPaths, 'Simulink.BlockPath')
                 blockPaths = blockPaths.convertToCell();
             end
             
@@ -116,18 +93,11 @@ classdef ExplorerA < matlab.apps.AppBase
                 assert(~isempty(idxs));
                 blockPath = strcat(blockPath, blockPaths{nBlockPath}(idxs(1):end));
             end
-        end
-        
-        
-        
+    end
         
     end
     
     methods (Static)
-        %
-        % Methods for accessing SLRT target object.
-        %
-        
         
         function connected = isSLRTTargetConnected(targetName)
             %
@@ -140,9 +110,8 @@ classdef ExplorerA < matlab.apps.AppBase
                 connected = strcmp(tg.connected, 'Yes');
             end
         end
-   
+        
     end
-    
     
     methods (Access = private)
         
@@ -163,7 +132,6 @@ classdef ExplorerA < matlab.apps.AppBase
                     app.ParametersTable.Data = [];
                     app.ParametersTable.Enable = 'off';
                     app.HighlightParameterInModelButton.Enable = 'off';
-                    app.HighlightParameterInModelButton.Tooltip = '';
                 else
                     
                     % Get list of all parameters to display in GUI based on current
@@ -198,7 +166,6 @@ classdef ExplorerA < matlab.apps.AppBase
                     % Disable buttons because no parameters are selected.
                     %
                     app.HighlightSignalInModelButton.Enable = 'off';
-                    app.HighlightSignalInModelButton.Tooltip = '';
                 end
             end
         end
@@ -233,20 +200,17 @@ classdef ExplorerA < matlab.apps.AppBase
             app.SignalsGroupTable.Data = [];
             app.SignalsGroupTable.Enable = 'off';
             app.AddToSignalGroupButton.Enable = 'off';
+            app.AddNameToSignalGroupButton.Enable = 'off';
             app.RemoveFromSignalGroupButton.Enable = 'off';
             app.HighlightSignalInModelButton.Enable = 'off';
-            app.HighlightSignalInModelButton.Tooltip = '';
             app.SDIOpenButton.Enable = 'off';
             app.SDIStreamButton.Enable = 'off';
-            app.SDIStreamButton.Tooltip = {''};
             
             app.ParametersTable.UserData = [];
             app.ParametersTable.Data = [];
             app.ParametersTable.Enable = 'off';
             app.HighlightParameterInModelButton.Enable = 'off';
-            app.HighlightParameterInModelButton.Tooltip = '';
         end
-
     end
 
     % Callbacks that handle component events
@@ -268,26 +232,8 @@ classdef ExplorerA < matlab.apps.AppBase
             app.HighlightSignalInModelButton.Icon      = app.hiliteInModelIcon;
             app.RemoveFromSignalGroupButton.Icon       = app.removeRowIcon;
             app.AddToSignalGroupButton.Icon            = app.addRowIcon;
+            app.AddNameToSignalGroupButton.Icon        = app.addRowIcon;
             app.HelpButton.Icon                        = app.helpIcon;
-            
-            
-            
-            % Add Tooltips JM
-            app.AddToSignalGroupButton.Tooltip            = app.addToSignalGroupButtonTooltip;
-            app.RemoveFromSignalGroupButton.Tooltip       = app.removeFromSignalGroupButtonTooltip;
-            app.TargetsDropDown.Tooltip                   = app.targetsDropDownTooltip;
-            app.ConnectDisconnectButton.Tooltip           = app.connectedTooltip;
-            app.LoadApplicationButton.Tooltip             = app.loadApplicationButtonTooltip;
-            app.StartStopButton.Tooltip                   = app.startTooltip;
-            app.StopTimeField.Tooltip                     = app.stopTimeFieldTooltip;
-            app.HelpButton.Tooltip                        = app.helpButtonTooltip;
-            app.FilterContentsEditField.Tooltip           = app.filterSignalsTooltip;
-            app.FilterCurrentSystemAndBelowButton.Tooltip = app.contentsBelowTooltip;
-            app.SDIStreamButton.Tooltip                   = {''};
-            app.HighlightSignalInModelButton.Tooltip      = app.highlightSignalButtonTooltip;
-            app.HighlightParameterInModelButton.Tooltip   = app.highlightParameterButtonTooltip;
-            
-            
             
             % Delete the scope axes, it is only needed to get the
             % proper position of scopes added by user.
@@ -320,7 +266,6 @@ classdef ExplorerA < matlab.apps.AppBase
             defaultTargetName = app.getSLRTDefaultTargetName();
             app.TargetsDropDown.Value = defaultTargetName;
             app.updateGUIForSelectedTarget();
-            app.updateGUIForTargetApplicationFilter(defaultTargetName);
             
             % Listen for targets added, removed, and renamed.
             %
@@ -329,33 +274,23 @@ classdef ExplorerA < matlab.apps.AppBase
             
         end
 
-        % Callback function
+        % Selection changed function: ApplicationTree
         function SignalsTableCellEdit(app, event)
             sels = cell2mat(app.SignalsTable.Data(:,1));
             if ~any(sels)
                 app.AddToSignalGroupButton.Enable = 'off';
+                app.AddNameToSignalGroupButton.Enable = 'off';
                 app.HighlightSignalInModelButton.Enable = 'off';
-                app.HighlightSignalInModelButton.Tooltip= {''};
             else
                 app.AddToSignalGroupButton.Enable = 'on';
+                app.AddNameToSignalGroupButton.Enable = 'on';
                 app.HighlightSignalInModelButton.Enable = 'on';
-                app.HighlightSignalInModelButton.Tooltip = app.highlightSignalButtonTooltip;
             end
         end
 
         % Button pushed function: ConnectDisconnectButton
         function ScopeModeButtonGroupSelectionChanged(app, event)
-            selectedButton = app.ScopeModeButtonGroup.SelectedObject;
-            selectedTargetName = app.getSelectedTargetName();
-            target = app.getTarget(selectedTargetName);
-            scIdx = find(strcmp({target.scopes.name}, app.ScopesGroup.SelectedTab.Title));
-            target.scopes(scIdx).mode = selectedButton.Text;
-            app.targetMap(selectedTargetName) = target;
-        end
-
-        % Value changed function: TargetsDropDown
-        function TargetsDropDownValueChanged(app, event)
-            app.updateGUIForSelectedTarget();
+            
         end
     end
 
@@ -368,7 +303,7 @@ classdef ExplorerA < matlab.apps.AppBase
             % Create SimulinkRealTimeExplorerUIFigure and hide until all components are created
             app.SimulinkRealTimeExplorerUIFigure = uifigure('Visible', 'off');
             app.SimulinkRealTimeExplorerUIFigure.AutoResizeChildren = 'off';
-            app.SimulinkRealTimeExplorerUIFigure.Position = [-1350 100 1284 731];
+            app.SimulinkRealTimeExplorerUIFigure.Position = [100 100 1284 731];
             app.SimulinkRealTimeExplorerUIFigure.Name = 'Simulink Real-Time Explorer';
             app.SimulinkRealTimeExplorerUIFigure.Resize = 'off';
 
@@ -406,13 +341,19 @@ classdef ExplorerA < matlab.apps.AppBase
             % Create TargetsDropDown
             app.TargetsDropDown = uidropdown(app.TargetPanel);
             app.TargetsDropDown.Items = {};
-            app.TargetsDropDown.ValueChangedFcn = createCallbackFcn(app, @TargetsDropDownValueChanged, true);
             app.TargetsDropDown.Position = [7 11 210 31];
             app.TargetsDropDown.Value = {};
 
             % Create ApplicationTree
             app.ApplicationTree = uitree(app.Panel);
-            app.ApplicationTree.Position = [46 276 211 342];
+            app.ApplicationTree.SelectionChangedFcn = createCallbackFcn(app, @SignalsTableCellEdit, true);
+            app.ApplicationTree.Position = [45 305 211 342];
+
+            % Create HelpButton
+            app.HelpButton = uibutton(app.Panel, 'push');
+            app.HelpButton.Tooltip = {'Help'};
+            app.HelpButton.Position = [1215 667 40 31];
+            app.HelpButton.Text = '';
 
             % Show the figure after all components are created
             app.SimulinkRealTimeExplorerUIFigure.Visible = 'on';
@@ -423,7 +364,7 @@ classdef ExplorerA < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = ExplorerA
+        function app = ExplorerB
 
             % Create UIFigure and components
             createComponents(app)
