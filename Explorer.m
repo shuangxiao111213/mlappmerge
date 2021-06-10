@@ -1,6 +1,6 @@
 classdef ExplorerB < matlab.apps.AppBase
 
-    % Properties that correspond to app components
+    % Properties that correspond to app components A
     properties (Access = public)
         SimulinkRealTimeExplorerUIFigure  matlab.ui.Figure
         Panel                    matlab.ui.container.Panel
